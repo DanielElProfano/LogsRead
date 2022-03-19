@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input directori</title>
+    <script>
+        const {ipcRenderer} = require('electron');
+        function submitForm(event){
+            event.preventDefault()
+            const input = document.getElementById('input').value;
+            ipcRenderer.send('send-directory', input);
+        }
+    </script>
+</head>
+<body>
+    <div>
+        <form onsubmit="submitForm(event)" >
+            <input id="input" type="text" value=""></input>
+            <button type="submit">Aceptar</button>
+        </form>
+    </div>
+</body>
+</html>

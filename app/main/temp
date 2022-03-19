@@ -1,0 +1,215 @@
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require( 'electron' );
+const path = require( 'path' );
+const fs = require('fs');
+const extract = require('extract-zip')
+const targz = require('targz');
+// const datepicker = require('js-datepicker')
+// local dependencies
+
+// open a window
+const openWindow = () => {
+    const win = new BrowserWindow( {
+        width: 800,
+        height: 500,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+            enableRemoteModule: true,
+        },
+    });
+
+    // load `index.html` file
+    win.loadFile( path.resolve( __dirname, 'render/html/index.html' ) );
+    const options = {
+      defaultPath: app.getPath("desktop"),
+      buttonLabel: 'Abrir',
+    }
+
+    const openDialog = () => {
+      const file = dialog.showOpenDialogSync(options)
+      console.log("file", file)
+      if (file === 'undefined'){
+        console.log("error")
+      }
+      descompress(file); // guarda la ruta del archivo descomprimido.
+  
+    }
+    function createSelect() {
+      console.log("select")
+    }
+
+    const descompress = (file) => {
+      const ok = new Promise((resolve, reject) => {
+        targz.decompress({
+          src: file[0],
+          dest: `${options.defaultPath}/tmp` //crea carpeta tmp en el escritorio.
+          }, function(err){
+              if(err) {
+                reject(err)
+                console.log(err);
+              } else {
+                resolve(true)
+                console.log("Done!");
+              }
+        });
+      })
+      ok.then((data) => {
+        if (data){
+          console.log("tofo de p.m")
+          const path = 'C:\\Users\\gonzalda\\Desktop\\tmp\\var\\log\\glylog\\'
+          fs.readdir(path, (err, files) => {
+            if (err){
+              console.log(err)
+            }
+            console.log(files.length)
+            let array = []
+            files.forEach((file) => {
+              const exist = file.includes('DebugTransaction.log.tar');
+              if(exist){
+                const archivo =fs.statSync(path+file)
+                // hacemos el formato de la fecha
+                const date = new Date(archivo.mtime)
+                const options = { year: 'numeric', month: 'long', day: 'numeric' }
+                array.push(`${new Intl.DateTimeFormat('en-US', options).format(date)}`)
+              }
+            })
+            const arraySorted = array.sort((a, b) => b.date + a.date)
+            arraySorted.forEach(file => {
+              console.log(file)
+            })
+            debugger
+            return true
+          })
+        console.log("finalizado exit")
+        }
+      })
+    }
+   
+        win.webContents.on("did-finish-load", () => {
+          openDialog();
+          // const file = dialog.showOpenDialogSync(options)
+          return win; // return window
+        });
+    }
+
+
+// when app is ready, open a window
+app.on( 'ready', () => {
+    const win = openWindow();
+    const mainMenu = Menu.buildFromTemplate(templateMenu);
+    Menu.setApplicationMenu(mainMenu)
+
+    // watch files
+    // io.watchFiles( win );
+});
+
+// when all windows are closed, quit the app
+app.on( 'window-all-closed', () => {
+    if( process.platform !== 'darwin' ) {
+        app.quit();
+    }
+} );
+
+const getDate = (dest) => {
+  console.log("date")
+}
+
+// when app activates, open a window
+// app.on( 'activate', () => {
+//     if( BrowserWindow.getAllWindows().length === 0 ) {
+//         openWindow();
+//     }
+// } );
+
+/************************/
+
+// return list of files
+// ipcMain.handle( 'app:get-files', () => {
+//     return io.getFiles();
+// } );
+
+// // listen to file(s) add event
+// ipcMain.handle( 'app:on-file-add', ( event, files = [] ) => {
+//     io.addFiles( files );
+// } );
+
+// open filesystem dialog to choose files
+// ipcMain.handle( 'app:on-fs-dialog-open', ( event ) => {
+//     const files = dialog.showOpenDialogSync( {
+//         properties: [ 'openFile', 'multiSelections' ],
+//     } );
+
+//     io.addFiles( files.map( filepath => {
+//         return {
+//             name: path.parse( filepath ).base,
+//             path: filepath,
+//         };
+//     } ) );
+// } );
+
+/*-----*/
+
+// // listen to file delete event
+// ipcMain.on( 'app:on-file-delete', ( event, file ) => {
+//     io.deleteFile( file.filepath );
+// } );
+
+// // listen to file open event
+// ipcMain.on( 'app:on-file-open', ( event, file ) => {
+//     io.openFile( file.filepath );
+// } );
+
+// // listen to file copy event
+// ipcMain.on( 'app:on-file-copy', ( event, file ) => {
+//     event.sender.startDrag( {
+//         file: file.filepath,
+//         icon: path.resolve( __dirname, '../resources/paper.png' ),
+//     } );
+// } );
+
+// MENU
+const templateMenu = [
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'New Product',
+          accelerator: 'Ctrl+N',
+          click() {
+            createNewProductWindow();
+          }
+        },
+        {
+          label: 'Remove All Products',
+          click() {
+            mainWindow.webContents.send('products:remove-all');
+          }
+        },
+        {
+          label: 'Exit',
+          accelerator: process.platform == 'darwin' ? 'command+Q' : 'Ctrl+Q',
+          click() {
+            app.quit();
+          }
+        }
+      ]
+    }
+  ];
+
+  if (process.env.NODE_ENV !== 'production') {
+    templateMenu.push({
+      label: 'DevTools',
+      submenu: [
+        {
+          label: 'Show/Hide Dev Tools',
+          accelerator: process.platform == 'darwin' ? 'Comand+D' : 'Ctrl+D',
+          click(item, focusedWindow) {
+            focusedWindow.toggleDevTools();
+          }
+        },
+        {
+          role: 'reload'
+        }
+      ]
+    })
+  }

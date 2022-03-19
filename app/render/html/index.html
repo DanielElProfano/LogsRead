@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang='en'>
+    <head>
+        <meta charset='UTF-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+        <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+        <title>Files Manager</title>
+
+        <!-- import fonts -->
+        <link rel="preconnect" href="https://fonts.gstatic.com">
+        <link rel="stylesheet" href="../../../node_modules/js-datepicker/dist/datepicker.min.css">
+        <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+
+        <!-- import styles -->
+        <link rel='stylesheet' href='../css/styles.css'>
+        <script>
+            const {ipcRenderer} = require('electron');
+            ipcRenderer.on('send-select', (event, data) => {
+                console.log(data)
+                const select = document.getElementById("select");
+                data.arraySorted.forEach((element, index) => {
+                    const option = document.createElement('option');
+                    option.text = data.arraySorted[index]
+                    option.value = data.completeArrayDateSorted[index]
+                    select.add(option,select[0])
+                });
+            })
+            function onSubmit(event) {
+                event.preventDefault()
+                console.log("event", event)
+                const inputValue = document.getElementById('directory').value
+                let array = []
+                const dates = document.querySelectorAll('select option:checked');
+                dates.forEach(date => {
+                    array.push(date.value)
+                })
+                const data = {
+                    array,
+                    inputValue
+                }
+                ipcRenderer.send("send-dates", data);
+            }
+
+        </script>
+        
+    </head>
+
+    <body class='app'>
+
+
+        <form onsubmit="onSubmit(event)">
+            <select id="select" name="select" multiple>Calendario</select>
+            <input id="directory" type="text"  value="Nombre carpeta" />
+            <input type="submit" value="Aceptar"></input>
+        </form>
+    </body>
+</html>
+
+<script src="../js/renderer.js"></script>
+<script>
+
+</script>
