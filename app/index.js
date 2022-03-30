@@ -43,22 +43,18 @@ ipcMain.on("send-dates", (event,renderData) => {
           console.log("directory: ", directory)
           if (!fs.existsSync(`${path}${directory}`)){
             fs.mkdirSync(`${path}${directory}`);
+          }
+          unzip = new Promise((resolve, reject) => {
+              decompress( `${path}${file}`, `${path}\\${directory}`)
+                .then(files => {
+                  return resolve(true);
+                  // return "true";
+                })
+                .catch(err => {
+                  reject(false)
+                })
+              })
         }
-        const unzip = new Promise((resolve, reject) => {
-        decompress( `${path}${file}`, `${path}\\${directory}`)
-          .then(files => {
-          resolve(true)
-          console.log('done!');
-          })
-          .catch(err => {
-            reject(false)
-          })
-        })
-        console.log("UNZIP", unzip)
-
-        // const unzzipped = unzipFiles(file, path, directory)
-        // if(unzzipped)  console.log("dirname: ", __dirname)
-       }
       }
     })
     //DESCOMPRIMIR EN EL DIRECTORIO LOS ARCHIVOS
@@ -68,10 +64,6 @@ ipcMain.on("send-dates", (event,renderData) => {
   fse.move('./app/tmp', `./${inputValue}`,  { overwrite: true }, err => {
     if (err) return console.error(err)
     console.log('success!')
-    // fs.rmdirSync(__dirname +"\\tmp", {
-    //   maxRetries: 10,
-    //   recursive: true
-    // });
   })
   exec('C:\\Users\\gonzalda\\Desktop\\Log Viewer v10\\bin\\Debug\\CI_LogViewer', function(err, data) {  
     console.log(err)
@@ -89,9 +81,6 @@ async function unzipFiles (file, path, directory){
   console.log("path", path);
   console.log("dir:", directory)
   const result = await decompress( `${path}${file}`, `${path}\\${directory}`)
-  // .then(files => {
-  //   console.log('done!');
-  // });
   if(result){
     return true
   }
@@ -124,7 +113,6 @@ const openWindow = () => {
       if (file === 'undefined'){
         console.log("error")
       }
-      // const directoryName = createWindow()
       descompress(file); // guarda la ruta del archivo descomprimido.
     }
     function createSelect(arraySorted, completeArrayDateSorted ) {
@@ -163,8 +151,10 @@ const openWindow = () => {
               const options = { year: 'numeric', month: 'long', day: 'numeric' }
               array.push(`${new Intl.DateTimeFormat('en-US', options).format(date)}`)
               arrayCompleteDate.push(date);
+              // FINAL FORMATEAR FECHA Y LO AÑADIMOS EN EL ARRAY
             }
           })
+          //ORDENAMOS EL ARRAY POR FEECHA
           const arraySorted = array.sort((a, b) => b.date + a.date);
           const arrayCompleteDateSorted = arrayCompleteDate.sort((a, b) => b.date + a.date)
           arraySorted.forEach(file => { 
@@ -177,11 +167,44 @@ const openWindow = () => {
     
    
         win.webContents.on("did-finish-load", () => {
-          openDialog();
+          // openDialog();
           // const file = dialog.showOpenDialogSync(options)
+          errorFinder();
           return win; // return window
         });
     }
+
+const errorFinder = () => {
+  console.log("error finder")
+//   fs.readFile('GLOG_SplCasherServer.log.001.div', 'utf8', function(err, data) {
+//     if (err) throw err;
+//     if(data.includes('GLY_ERROR (')){
+//       console.log("position: ", data.indexOf("GLY_ERROR ("));
+//       let position = data.indexOf("GLY_ERROR (") + 11;
+//       // console.log(data[position+11])
+//       let error = "";
+//       for (let i = 0; i < 4 ; i++){
+//         console.log(data[position])
+//         error = error + data[position]
+//         position++
+//       }
+//       var regex = /GLY_ERROR\s/g, result, indices = [];
+//       while ( (result = regex.exec(data)) ) {
+//         indices.push(result.index);
+//       }
+//       console.log("indices: ",indices)
+//     }
+//     // const error = 
+// });
+  const allFileContents = fs.readFileSync('GLOG_SplCasherServer.log.001.div', 'utf-8');
+  allFileContents.split(/\r?\n/).forEach(line =>  {
+    if(line.includes('GLY_ERROR (')){
+      console.log(`Line from file: ${line}`);
+    }
+  });
+  const used = process.memoryUsage().heapUsed / 1024 / 1024;
+  console.log(`The script uses approximately ${Math.round(used * 100) / 100} MB`)
+}
 function createWindow() {
       const directoryWindow = new BrowserWindow({
         width: 200,
