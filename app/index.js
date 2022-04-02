@@ -16,7 +16,7 @@ ipcMain.on("send-dates", (event,renderData) => {
   //AQUI TENEMOS EL ARRAY CON LAS FECHAS A ANALIZAR.
   //POR CADA FECHA CREAMOS UN DIRECTORIO Y DESCOMPRIMIMOS LOS ARCHIVOS.
   const {array, inputValue} = renderData
-  console.log("arraydate", renderData)
+  // console.log("arraydate", renderData)
   array.forEach(date => {
     const formmatedDate = new Date(date)
     const fMonth = formmatedDate.getMonth();
@@ -61,15 +61,16 @@ ipcMain.on("send-dates", (event,renderData) => {
   })
   console.log("input value: ", inputValue)
   fs.mkdirSync(inputValue)
+  console.log("carpeta creada")
   fse.move('./app/tmp', `./${inputValue}`,  { overwrite: true }, err => {
     if (err) return console.error(err)
     console.log('success!')
   })
-  exec('C:\\Users\\gonzalda\\Desktop\\Log Viewer v10\\bin\\Debug\\CI_LogViewer', function(err, data) {  
-    console.log(err)
-    console.log(data.toString());       
-    return true                
-  });  
+  // exec('C:\\Users\\gonzalda\\Desktop\\Log Viewer v10\\bin\\Debug\\CI_LogViewer', function(err, data) {  
+  //   console.log(err)
+  //   console.log(data.toString());       
+  //   return true                
+  // });  
 })
 
 ipcMain.on('send-directory', directoryName => {
@@ -142,6 +143,7 @@ const openWindow = () => {
           const files = fs.readdirSync(path)
           let array = [];
           let arrayCompleteDate = [];
+          const errorArray = []
           files.forEach((file) => {
             const exist = file.includes('DebugTransaction.log.tar');
             if(exist){
@@ -153,6 +155,12 @@ const openWindow = () => {
               arrayCompleteDate.push(date);
               // FINAL FORMATEAR FECHA Y LO AÑADIMOS EN EL ARRAY
             }
+            if(file.includes('GLOG_SplCasherServer.log')){
+              const errorByFile = errorFinder(file, path);
+              if (errorByFile.length){
+                errorArray.push(errorByFile);
+              } 
+            }
           })
           //ORDENAMOS EL ARRAY POR FEECHA
           const arraySorted = array.sort((a, b) => b.date + a.date);
@@ -160,6 +168,7 @@ const openWindow = () => {
           arraySorted.forEach(file => { 
             console.log(file)
           })
+          // errorFinder();
           createSelect(arraySorted, arrayCompleteDateSorted);
         }
         })
@@ -167,43 +176,22 @@ const openWindow = () => {
     
    
         win.webContents.on("did-finish-load", () => {
-          // openDialog();
-          // const file = dialog.showOpenDialogSync(options)
-          errorFinder();
+          openDialog();
+          // errorFinder();
           return win; // return window
         });
     }
 
-const errorFinder = () => {
-  console.log("error finder")
-//   fs.readFile('GLOG_SplCasherServer.log.001.div', 'utf8', function(err, data) {
-//     if (err) throw err;
-//     if(data.includes('GLY_ERROR (')){
-//       console.log("position: ", data.indexOf("GLY_ERROR ("));
-//       let position = data.indexOf("GLY_ERROR (") + 11;
-//       // console.log(data[position+11])
-//       let error = "";
-//       for (let i = 0; i < 4 ; i++){
-//         console.log(data[position])
-//         error = error + data[position]
-//         position++
-//       }
-//       var regex = /GLY_ERROR\s/g, result, indices = [];
-//       while ( (result = regex.exec(data)) ) {
-//         indices.push(result.index);
-//       }
-//       console.log("indices: ",indices)
-//     }
-//     // const error = 
-// });
-  const allFileContents = fs.readFileSync('GLOG_SplCasherServer.log.001.div', 'utf-8');
-  allFileContents.split(/\r?\n/).forEach(line =>  {
+const errorFinder = (file, path) => {
+  console.log("error finder", file)
+  let errorArray = [];
+  const allFileContents = fs.readFileSync(`${path}${file}`, 'utf-8');
+  allFileContents.split(/\r?\n/).forEach(line =>  {  //crear array con las líneas de cada archivo.
     if(line.includes('GLY_ERROR (')){
-      console.log(`Line from file: ${line}`);
+      errorArray.push(line);
     }
   });
-  const used = process.memoryUsage().heapUsed / 1024 / 1024;
-  console.log(`The script uses approximately ${Math.round(used * 100) / 100} MB`)
+  return errorArray;
 }
 function createWindow() {
       const directoryWindow = new BrowserWindow({
